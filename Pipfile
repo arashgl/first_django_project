@@ -7,9 +7,12 @@ name = "pypi"
 django = "*"
 django-debug-toolbar = "*"
 mysqlclient = "*"
+djangorestframework = "*"
 
 [dev-packages]
 black = "*"
+yapf = "*"
+autopep8 = "*"
 
 [requires]
 python_version = "3.9"
