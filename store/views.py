@@ -8,46 +8,33 @@ from rest_framework.views import APIView
 from rest_framework.mixins import ListModelMixin
 from rest_framework.viewsets import ModelViewSet
 from .serializers import ProductSerializer, CollectionSerializer
-from .models import Product, Collection
+from .models import Product, Collection, OrderItem
 
 
 # Product
-class ProductList(ListCreateAPIView):
+class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
 
     def get_serializer_context(self):
         return {'request': self.request}
 
-
-class ProductDetail(RetrieveUpdateDestroyAPIView):
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
-
-    def delete(self, request, pk):
-        product = get_object_or_404(Product, id=pk)
-        if product.orderitems.count() > 0:
+    def destroy(self, request, *args, **kwargs):
+        if OrderItem.objects.filter(product_id=kwargs['pk']).count() > 0:
             return Response({'This product can not be deleted because it is in one or more orders'},
                             status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        product.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
+        return super().destroy(request, *args, **kwargs)
 
 # Collection
-class CollectionList(ListCreateAPIView):
+
+
+class CollectionViewSet(ModelViewSet):
     queryset = Collection.objects.annotate(
         product_count=Count('products')).all()
     serializer_class = CollectionSerializer
 
-
-class CollectionDetail(RetrieveUpdateDestroyAPIView):
-    queryset = Collection.objects.annotate(
-        product_count=Count('products'))
-    serializer_class = CollectionSerializer
-
-    def delete(self, request, pk):
-        collection = get_object_or_404(Collection, id=pk)
-        if collection.products.count() > 0:
-            return Response({'This collection can not be deleted because it has more than one products in it'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        collection.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    def destroy(self, request, *args, **kwargs):
+        if Product.objects.filter(collection_id=kwargs['pk']).count() > 0:
+            return Response({'This collection can not be deleted because it has more than one products in it'},
+                            status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return super().destroy(request, *args, **kwargs)
